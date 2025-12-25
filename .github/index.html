@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分离定律交互演示 - 配子生成与结合</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        select, input, button {
+            padding: 5px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #000;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        .animation {
+            color: green;
+            font-weight: bold;
+        }
+        .process {
+            margin-top: 20px;
+        }
+        .process div {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>分离定律交互演示 - 配子生成与结合</h1>
+        <p>选择亲本的基因型和分离次数，查看配子生成与结合的动态过程。</p >
+        
+        <label for="parent1">亲本1基因型：</label>
+        <select id="parent1">
+            <option value="AA">AA</option>
+            <option value="Aa">Aa</option>
+            <option value="aa">aa</option>
+        </select>
+
+        <label for="parent2">亲本2基因型：</label>
+        <select id="parent2">
+            <option value="AA">AA</option>
+            <option value="Aa">Aa</option>
+            <option value="aa">aa</option>
+        </select>
+
+        <label for="generations">分离次数：</label>
+        <input type="number" id="generations" value="200" min="1">
+
+        <button onclick="startAnimation()">开始</button>
+        <button onclick="pauseAnimation()">暂停</button>
+        <button onclick="resumeAnimation()">继续</button>
+
+        <div class="result">
+            <h2>结果</h2>
+            <p id="genotypeResult"></p >
+            <p id="phenotypeResult"></p >
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>基因型</th>
+                        <th>数量</th>
+                        <th>比例</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <p id="animationText" class="animation"></p >
+        </div>
+
+        <div class="process">
+            <h2>过程展示</h2>
+            <div id="parentGametes"></div>
+            <div id="offspringGenotypes"></div>
+        </div>
+    </div>
+
+    <script>
+        let animationInterval;
+        let currentGeneration = 0;
+        let genotypeCounts = { AA: 0, Aa: 0, aa: 0 };
+        let isPaused = false;
+
+        function startAnimation() {
+            // 重置状态
+            clearInterval(animationInterval);
+            currentGeneration = 0;
+            genotypeCounts = { AA: 0, Aa: 0, aa: 0 };
+            isPaused = false;
+            document.getElementById("animationText").innerText = "";
+            document.getElementById("parentGametes").innerHTML = "";
+            document.getElementById("offspringGenotypes").innerHTML = "";
+
+            // 获取用户输入的分离次数
+            const generations = parseInt(document.getElementById("generations").value);
+
+            // 开始动画
+            animationInterval = setInterval(() => {
+                if (!isPaused && currentGeneration < generations) {
+                    simulateOneGeneration();
+                    currentGeneration++;
+                    document.getElementById("animationText").innerText = `正在模拟第 ${currentGeneration} 次分离...`;
+                } else if (currentGeneration >= generations) {
+                    clearInterval(animationInterval);
+                    document.getElementById("animationText").innerText = "模拟完成！";
+                }
+            }, 100); // 每 100 毫秒模拟一次分离
+        }
+
+        function pauseAnimation() {
+            isPaused = true;
+            document.getElementById("animationText").innerText = "已暂停";
+        }
+
+        function resumeAnimation() {
+            isPaused = false;
+            document.getElementById("animationText").innerText = `正在模拟第 ${currentGeneration} 次分离...`;
+        }
+
+        function simulateOneGeneration() {
+            // 获取亲本基因型
+            const parent1 = document.getElementById("parent1").value;
+            const parent2 = document.getElementById("parent2").value;
+
+            // 生成配子
+            const gametes1 = getGametes(parent1);
+            const gametes2 = getGametes(parent2);
+
+            // 显示配子生成过程
+            document.getElementById("parentGametes").innerHTML = `
+                <p>亲本1 (${parent1}) 产生的配子：${gametes1.join(", ")}</p >
+                <p>亲本2 (${parent2}) 产生的配子：${gametes2.join(", ")}</p >
+            `;
+
+            // 随机选择配子结合
+            const randomGamete1 = gametes1[Math.floor(Math.random() * gametes1.length)];
+            const randomGamete2 = gametes2[Math.floor(Math.random() * gametes2.length)];
+            const genotype = randomGamete1 + randomGamete2;
+
+            // 显示配子结合过程
+            document.getElementById("offspringGenotypes").innerHTML = `
+                <p>配子结合：${randomGamete1} + ${randomGamete2} = ${genotype}</p >
+            `;
+
+            // 更新基因型计数器
+            if (genotype === "AA") genotypeCounts.AA++;
+            else if (genotype === "Aa" || genotype === "aA") genotypeCounts.Aa++;
+            else if (genotype === "aa") genotypeCounts.aa++;
+
+            // 更新页面显示
+            updateResults();
+        }
+
+        function updateResults() {
+            // 计算总数
+            const total = genotypeCounts.AA + genotypeCounts.Aa + genotypeCounts.aa;
+
+            // 显示基因型比例
+            const genotypeResult = `基因型比例：AA : Aa : aa = ${genotypeCounts.AA} : ${genotypeCounts.Aa} : ${genotypeCounts.aa}`;
+            document.getElementById("genotypeResult").innerText = genotypeResult;
+
+            // 显示表现型比例
+            const dominant = genotypeCounts.AA + genotypeCounts.Aa;
+            const recessive = genotypeCounts.aa;
+            const phenotypeResult = `表现型比例：显性 : 隐性 = ${dominant} : ${recessive}`;
+            document.getElementById("phenotypeResult").innerText = phenotypeResult;
+
+            // 更新表格
+            const tableBody = document.querySelector("#resultTable tbody");
+            tableBody.innerHTML = `
+                <tr>
+                    <td>AA</td>
+                    <td>${genotypeCounts.AA}</td>
+                    <td>${((genotypeCounts.AA / total) * 100).toFixed(2)}%</td>
+                </tr>
+                <tr>
+                    <td>Aa</td>
+                    <td>${genotypeCounts.Aa}</td>
+                    <td>${((genotypeCounts.Aa / total) * 100).toFixed(2)}%</td>
+                </tr>
+                <tr>
+                    <td>aa</td>
+                    <td>${genotypeCounts.aa}</td>
+                    <td>${((genotypeCounts.aa / total) * 100).toFixed(2)}%</td>
+                </tr>
+            `;
+        }
+
+        // 根据亲本基因型生成配子
+        function getGametes(parent) {
+            const alleles = parent.split("");
+            return alleles;
+        }
+    </script>
+</body>
+</html>
